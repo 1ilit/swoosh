@@ -4,7 +4,7 @@
 
 int main()
 {
-    std::ifstream in("test.html");
+    std::ifstream in("./examples/first/test.html");
     std::string line;
     while (std::getline(in, line))
     {
