@@ -1,24 +1,27 @@
-CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++20
+CXX := g++
+CXXFLAGS := -Wall -Wextra -std=c++20
 
-TARGET = ./build/spinlock.out
-SRCS = ./src/main.cpp
+SRC_DIR := ./src
+OBJ_DIR := ./obj
+BIN_DIR := ./bin
 
-BUILD_DIR = ./build
-OBJS = $(SRCS:./src/%.cpp=$(BUILD_DIR)/%.o)
+SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
+
+OBJ_FILES := $(SRC_FILES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
+
+TARGET := $(BIN_DIR)/swoosh
 
 all: $(TARGET)
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS)
+$(TARGET): $(OBJ_FILES)
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(OBJ_FILES) -o $@
 
-$(BUILD_DIR)/%.o: ./src/%.cpp | $(BUILD_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
-
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(OBJ_DIR) $(BIN_DIR)
 
 .PHONY: all clean
