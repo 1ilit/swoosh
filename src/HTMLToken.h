@@ -4,6 +4,8 @@
 
 class HTMLToken
 {
+    friend class HTMLTokenizer;
+
 public:
     enum class Type
     {
@@ -40,6 +42,8 @@ public:
     {
         std::string data;
     };
+
+    std::string to_string();
 
 private:
     Type m_type;
