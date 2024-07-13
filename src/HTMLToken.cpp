@@ -43,20 +43,19 @@ std::string HTMLToken::to_string()
         str.append("\t]\n}");
         return str;
     case Type::END_TAG:
-        str =
-            "START TAG "
-            "{\n\tself closing: " +
-                    m_end_tag.self_closing
-                ? "yes"
-                : "no"
-                  ",\n\t attributes: [\n";
+        str = "END TAG ";
+        str.append("{\n\tname: ");
+        str.append(m_end_tag.name);
+        str.append(",\n\tself closing: ");
+        str.append(m_end_tag.self_closing ? "yes" : "no");
+        str.append(",\n\tattributes: [\n");
 
         for (const Attribute &a : m_end_tag.attributes)
         {
             str.append("\t\t" + a.name + ": " + a.value + '\n');
         }
 
-        str.append("]\n}");
+        str.append("\t]\n}");
         return str;
     default:
         return "";

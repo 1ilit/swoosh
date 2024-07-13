@@ -105,12 +105,28 @@ bool HTMLTokenizer::tokenize()
 
         if (isupper(current_input_character))
         {
-            m_current_token.m_start_tag.name += (current_input_character - 32);
+            if (m_current_token.m_type == HTMLToken::Type::START_TAG)
+            {
+                m_current_token.m_start_tag.name += (current_input_character - 32);
+            }
+
+            if (m_current_token.m_type == HTMLToken::Type::END_TAG)
+            {
+                m_current_token.m_end_tag.name += (current_input_character - 32);
+            }
             m_state = State::TAG_NAME;
             goto TagName;
         }
 
-        m_current_token.m_start_tag.name += current_input_character;
+        if (m_current_token.m_type == HTMLToken::Type::START_TAG)
+        {
+            m_current_token.m_start_tag.name += current_input_character;
+        }
+
+        if (m_current_token.m_type == HTMLToken::Type::END_TAG)
+        {
+            m_current_token.m_end_tag.name += current_input_character;
+        }
         m_state = State::TAG_NAME;
         goto TagName;
 
@@ -202,6 +218,17 @@ bool HTMLTokenizer::tokenize()
 
     EndTagOpen:
     case State::END_TAG_OPEN:
+        current_input_character = m_input[m_cursor];
+        shift_cursor();
+
+        if (isalpha(current_input_character))
+        {
+            m_current_token.m_type = HTMLToken::Type::END_TAG;
+            m_current_token.m_end_tag.name = current_input_character;
+            m_state = State::TAG_NAME;
+            goto TagName;
+        }
+
         break;
 
     default:
