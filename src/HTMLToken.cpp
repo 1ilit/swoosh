@@ -28,20 +28,19 @@ std::string HTMLToken::to_string()
                if_empty_say_empty(m_comment.data) +
                "\n}";
     case Type::START_TAG:
-        str =
-            "START TAG "
-            "{\n\tself closing: " +
-                    m_start_tag.self_closing
-                ? "yes"
-                : "no"
-                  ",\n\t attributes: [\n";
+        str = "START TAG ";
+        str.append("{\n\tname: ");
+        str.append(m_start_tag.name);
+        str.append(",\n\tself closing: ");
+        str.append(m_start_tag.self_closing ? "yes" : "no");
+        str.append(",\n\tattributes: [\n");
 
         for (const Attribute &a : m_start_tag.attributes)
         {
             str.append("\t\t" + a.name + ": " + a.value + '\n');
         }
 
-        str.append("]\n}");
+        str.append("\t]\n}");
         return str;
     case Type::END_TAG:
         str =

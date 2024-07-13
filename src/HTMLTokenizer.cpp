@@ -1,5 +1,6 @@
 #include "HTMLTokenizer.h"
 #include <iostream>
+#include <cctype>
 #include "HTMLToken.h"
 
 HTMLTokenizer::HTMLTokenizer(std::string input)
@@ -61,6 +62,59 @@ bool HTMLTokenizer::tokenize()
             goto EndTagOpen;
         }
 
+        if (isalpha(current_input_character))
+        {
+            m_current_token.m_type = HTMLToken::Type::START_TAG;
+            m_current_token.m_start_tag.name = current_input_character;
+            m_state = State::TAG_NAME;
+            goto TagName;
+        }
+
+        break;
+
+    TagName:
+    case State::TAG_NAME:
+        current_input_character = m_input[m_cursor];
+        shift_cursor();
+
+        if (current_input_character == ' ' || current_input_character == '\a' || current_input_character == '\f' || current_input_character == '\t')
+        {
+            m_state = State::BEFORE_ATTRIBUTE_NAME;
+            goto BeforeAttributeName;
+        }
+
+        if (current_input_character == '/')
+        {
+            m_state = State::SELF_CLOSING_START_TAG;
+            goto SelfClosingStartTag;
+        }
+
+        if (current_input_character == '>')
+        {
+            emit_current_token();
+            m_state = State::DATA;
+            goto Data;
+        }
+
+        if (isupper(current_input_character))
+        {
+            m_current_token.m_start_tag.name += (current_input_character - 32);
+            m_state = State::TAG_NAME;
+            goto TagName;
+        }
+
+        m_current_token.m_start_tag.name += current_input_character;
+        m_state = State::TAG_NAME;
+        goto TagName;
+
+        break;
+
+    SelfClosingStartTag:
+    case State::SELF_CLOSING_START_TAG:
+        break;
+
+    BeforeAttributeName:
+    case State::BEFORE_ATTRIBUTE_NAME:
         break;
 
     MarkupDeclarationOpen:
@@ -146,6 +200,8 @@ bool HTMLTokenizer::tokenize()
     default:
         break;
     }
+
+    return true;
 }
 
 void HTMLTokenizer::set_input(std::string input)
@@ -165,7 +221,6 @@ void HTMLTokenizer::shift_cursor(unsigned int offset)
 
 void HTMLTokenizer::emit_current_token()
 {
-
     std::cout << m_current_token.to_string() << std::endl;
     m_current_token = {};
 }
