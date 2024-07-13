@@ -20,6 +20,13 @@ bool HTMLTokenizer::tokenize()
     case State::DATA:
         current_input_character = m_input[m_cursor];
         shift_cursor();
+
+        if (current_input_character == ' ' || current_input_character == '\a' || current_input_character == '\f' || current_input_character == '\t' || current_input_character == '\n')
+        {
+            m_state = State::DATA;
+            goto Data;
+        }
+
         if (current_input_character == '&')
         {
             m_return_state = State::DATA;
