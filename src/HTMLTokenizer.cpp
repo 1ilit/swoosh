@@ -134,6 +134,29 @@ bool HTMLTokenizer::tokenize()
 
     SelfClosingStartTag:
     case State::SELF_CLOSING_START_TAG:
+        current_input_character = m_input[m_cursor];
+        shift_cursor();
+
+        if (current_input_character == '>')
+        {
+            m_current_token.m_start_tag.self_closing = true;
+            emit_current_token();
+            m_state = State::DATA;
+            goto Data;
+        }
+
+        if (current_input_character == '\0')
+        {
+            m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+            emit_current_token();
+            break;
+        }
+
+        // error
+        shift_cursor(-1);
+        m_state = State::BEFORE_ATTRIBUTE_NAME;
+        goto BeforeAttributeName;
+
         break;
 
     BeforeAttributeName:
@@ -256,6 +279,8 @@ bool HTMLTokenizer::tokenize()
         if (current_input_character == '\0')
         {
             m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+            emit_current_token();
+            break;
         }
 
         m_current_token.m_start_tag.attributes.back().value += current_input_character;
