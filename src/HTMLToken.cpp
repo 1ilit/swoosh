@@ -57,6 +57,8 @@ std::string HTMLToken::to_string()
 
         str.append("\t]\n}");
         return str;
+    case Type::END_OF_FILE:
+        return "END OF FILE";
     default:
         return "";
     }

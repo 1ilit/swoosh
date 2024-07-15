@@ -92,7 +92,7 @@ public:
 
     bool tokenize();
     void set_input(std::string input);
-    void shift_cursor(unsigned int offset = 1);
+    void shift_cursor(int offset = 1);
     bool next_few_characters_are(size_t number, std::string chars);
     void emit_current_token();
 

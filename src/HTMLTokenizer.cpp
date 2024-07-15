@@ -138,6 +138,234 @@ bool HTMLTokenizer::tokenize()
 
     BeforeAttributeName:
     case State::BEFORE_ATTRIBUTE_NAME:
+        current_input_character = m_input[m_cursor];
+        shift_cursor();
+
+        if (current_input_character == ' ' || current_input_character == '\a' || current_input_character == '\f' || current_input_character == '\t')
+        {
+            m_state = State::BEFORE_ATTRIBUTE_NAME;
+            goto BeforeAttributeName;
+        }
+
+        if (current_input_character == '/' || current_input_character == '>' || current_input_character == '\0')
+        {
+            shift_cursor(-1);
+            m_state = State::AFTER_ATTRIBUTE_NAME;
+            goto AfterAttributeName;
+        }
+
+        // if (current_input_character == '=')
+        // {
+        //     std::cout << "error\n";
+        // }
+
+        m_current_token.m_start_tag.attributes.push_back({.name = "", .value = ""});
+        m_state = State::ATTRIBUTE_NAME;
+        shift_cursor(-1);
+        goto AttributeName;
+
+        break;
+
+    AfterAttributeName:
+    case State::AFTER_ATTRIBUTE_NAME:
+        break;
+
+    AttributeName:
+    case State::ATTRIBUTE_NAME:
+        current_input_character = m_input[m_cursor];
+        shift_cursor();
+
+        if (current_input_character == ' ' || current_input_character == '\a' || current_input_character == '\f' ||
+            current_input_character == '\t' || current_input_character == '/' || current_input_character == '>')
+        {
+            shift_cursor(-1);
+            m_state = State::AFTER_ATTRIBUTE_NAME;
+            goto AfterAttributeName;
+        }
+
+        if (current_input_character == '=')
+        {
+            m_state = State::BEFORE_ATTRIBUTE_VALUE;
+            goto BeforeAttributeValue;
+        }
+
+        if (isupper(current_input_character))
+        {
+            m_current_token.m_start_tag.attributes.back().name += current_input_character - 32;
+            goto AttributeName;
+        }
+
+        m_current_token.m_start_tag.attributes.back().name += current_input_character;
+        goto AttributeName;
+
+        break;
+
+    BeforeAttributeValue:
+    case State::BEFORE_ATTRIBUTE_VALUE:
+        current_input_character = m_input[m_cursor];
+        shift_cursor();
+
+        if (current_input_character == ' ' || current_input_character == '\a' || current_input_character == '\f' || current_input_character == '\t')
+        {
+            goto BeforeAttributeValue;
+        }
+
+        if (current_input_character == '\'')
+        {
+            m_state = State::ATTRIBUTE_VALUE_SINGLE_QUOTED;
+            goto AttributeValueSingleQuoted;
+        }
+
+        if (current_input_character == '"')
+        {
+            m_state = State::ATTRIBUTE_VALUE_DOUBLE_QUOTED;
+            goto AttributeValueDoubleQuoted;
+        }
+
+        if (current_input_character == '>')
+        {
+            emit_current_token();
+            m_state = State::DATA;
+            goto Data;
+        }
+
+        shift_cursor(-1);
+        m_state = State::ATTRIBUTE_VALUE_UNQUOTED;
+        goto AttributeValueUnquoted;
+
+        break;
+
+    AttributeValueSingleQuoted:
+    case State::ATTRIBUTE_VALUE_SINGLE_QUOTED:
+        current_input_character = m_input[m_cursor];
+        shift_cursor();
+
+        if (current_input_character == '\'')
+        {
+            m_state = State::AFTER_ATTRIBUTE_VALUE_QUOTED;
+            goto AfterAttributeValueQuoted;
+        }
+
+        if (current_input_character == '&')
+        {
+            m_return_state = State::ATTRIBUTE_VALUE_SINGLE_QUOTED;
+            m_state = State::CHARACTER_REFERENCE;
+            goto CharacterReference;
+        }
+
+        if (current_input_character == '\0')
+        {
+            m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+        }
+
+        m_current_token.m_start_tag.attributes.back().value += current_input_character;
+        goto AttributeValueSingleQuoted;
+        break;
+
+    AttributeValueDoubleQuoted:
+    case State::ATTRIBUTE_VALUE_DOUBLE_QUOTED:
+        current_input_character = m_input[m_cursor];
+        shift_cursor();
+
+        if (current_input_character == '"')
+        {
+            m_state = State::AFTER_ATTRIBUTE_VALUE_QUOTED;
+            goto AfterAttributeValueQuoted;
+        }
+
+        if (current_input_character == '&')
+        {
+            m_return_state = State::ATTRIBUTE_VALUE_DOUBLE_QUOTED;
+            m_state = State::CHARACTER_REFERENCE;
+            goto CharacterReference;
+        }
+
+        if (current_input_character == '\0')
+        {
+            m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+            emit_current_token();
+            break;
+        }
+
+        m_current_token.m_start_tag.attributes.back().value += current_input_character;
+        goto AttributeValueDoubleQuoted;
+        break;
+
+    AttributeValueUnquoted:
+    case State::ATTRIBUTE_VALUE_UNQUOTED:
+        current_input_character = m_input[m_cursor];
+        shift_cursor();
+
+        if (current_input_character == ' ' || current_input_character == '\a' || current_input_character == '\f' || current_input_character == '\t')
+        {
+            goto AttributeValueUnquoted;
+        }
+
+        if (current_input_character == '&')
+        {
+            m_return_state = State::ATTRIBUTE_VALUE_UNQUOTED;
+            m_state = State::CHARACTER_REFERENCE;
+            goto CharacterReference;
+        }
+
+        if (current_input_character == '>')
+        {
+            emit_current_token();
+            m_state = State::DATA;
+            goto Data;
+        }
+
+        if (current_input_character == '\0')
+        {
+            m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+            emit_current_token();
+            break;
+        }
+
+        if (current_input_character == '=' || current_input_character == '\'' || current_input_character || '"' || current_input_character == '<' || current_input_character == '`')
+        {
+            // error
+        }
+
+        m_current_token.m_start_tag.attributes.back().value += current_input_character;
+
+        break;
+
+    AfterAttributeValueQuoted:
+    case State::AFTER_ATTRIBUTE_VALUE_QUOTED:
+        current_input_character = m_input[m_cursor];
+        shift_cursor();
+
+        if (current_input_character == ' ' || current_input_character == '\a' || current_input_character == '\f' || current_input_character == '\t')
+        {
+            goto AttributeValueUnquoted;
+        }
+
+        if (current_input_character == '/')
+        {
+            m_state = State::SELF_CLOSING_START_TAG;
+            goto SelfClosingStartTag;
+        }
+
+        if (current_input_character == '>')
+        {
+            emit_current_token();
+            m_state = State::DATA;
+            goto Data;
+        }
+
+        if (current_input_character == '\0')
+        {
+            m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+            emit_current_token();
+            break;
+        }
+
+        // error
+        shift_cursor(-1);
+        m_state = State::BEFORE_ATTRIBUTE_NAME;
+        goto BeforeAttributeName;
+
         break;
 
     MarkupDeclarationOpen:
@@ -243,7 +471,7 @@ void HTMLTokenizer::set_input(std::string input)
     m_input = input;
 }
 
-void HTMLTokenizer::shift_cursor(unsigned int offset)
+void HTMLTokenizer::shift_cursor(int offset)
 {
     if (m_cursor >= m_input.length())
     {
