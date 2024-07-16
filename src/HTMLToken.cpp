@@ -25,7 +25,7 @@ std::string HTMLToken::to_string()
     case Type::CHARACTER:
         return "CHARACTER "
                "{\n\tdata: " +
-               if_empty_say_empty(m_comment.data) +
+               if_empty_say_empty(m_character.data) +
                "\n}";
     case Type::START_TAG:
         str = "START TAG ";

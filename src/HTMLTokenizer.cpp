@@ -42,8 +42,15 @@ bool HTMLTokenizer::tokenize()
 
         if (current_input_character == '\0')
         {
-            //
+            m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+            emit_current_token();
+            break;
         }
+
+        m_current_token.m_type = HTMLToken::Type::CHARACTER;
+        m_current_token.m_character.data += current_input_character;
+        emit_current_token();
+        goto Data;
 
         break;
 
