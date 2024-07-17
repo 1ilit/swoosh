@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cctype>
 #include "HTMLToken.h"
+#include "HTMLParseError.h"
 
 HTMLTokenizer::HTMLTokenizer(std::string input)
 {
@@ -47,6 +48,11 @@ bool HTMLTokenizer::tokenize()
             break;
         }
 
+        if (!current_input_character)
+        {
+            HTMLParseError(HTMLParseError::ErrorCode::UNEXPECTED_NULL_CHARACTER).emit_error();
+        }
+
         m_current_token.m_type = HTMLToken::Type::CHARACTER;
         m_current_token.m_character.data += current_input_character;
         emit_current_token();
@@ -63,6 +69,11 @@ bool HTMLTokenizer::tokenize()
     case State::TAG_OPEN:
         current_input_character = m_input[m_cursor];
         shift_cursor();
+
+        if (current_input_character == '?')
+        {
+            HTMLParseError(HTMLParseError::ErrorCode::UNEXPECTED_QUESTION_MARK_INSTEAD_OF_TAG_NAME).emit_error();
+        }
 
         if (current_input_character == '!')
         {
