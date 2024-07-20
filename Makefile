@@ -11,11 +11,13 @@ OBJ_FILES := $(SRC_FILES:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 
 TARGET := $(BIN_DIR)/swoosh
 
+LIBS := -lssl -lcrypto
+
 all: $(TARGET)
 
 $(TARGET): $(OBJ_FILES)
 	@mkdir -p $(BIN_DIR)
-	$(CXX) $(OBJ_FILES) -o $@
+	$(CXX) $(OBJ_FILES) -o $@ $(LIBS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	@mkdir -p $(OBJ_DIR)

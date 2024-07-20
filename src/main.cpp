@@ -2,9 +2,9 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include <stdexcept>
 #include <vector>
 #include "HTMLTokenizer.h"
+#include "HTTPClient.h"
 
 std::string read(const std::string &filePath)
 {
@@ -24,10 +24,14 @@ std::string read(const std::string &filePath)
 
 int main()
 {
-    std::string res = read("./examples/test.html");
-    HTMLTokenizer tokenizer(res);
+    // std::string res = read("./examples/test.html");
+    // HTMLTokenizer tokenizer(res);
 
-    tokenizer.tokenize();
+    // tokenizer.tokenize();
+
+    HTTPClient client;
+    client.get("raw.githubusercontent.com", "/drawdb-io/drawdb/main/src/i18n/i18n.js");
+    client.get("raw.githubusercontent.com", "/drawdb-io/drawdb/main/src/main.jsx");
 
     return 0;
 }
