@@ -24,7 +24,7 @@ std::string read(const std::string &filePath)
 
 int main()
 {
-    std::string res = read("./examples/test.html");
+    std::string res = read("./examples/simple.html");
     HTMLTokenizer tokenizer(res);
 
     tokenizer.tokenize();

@@ -66,6 +66,74 @@ bool HTMLTokenizer::tokenize()
 
             break;
 
+        case State::RCDATA:
+            current_input_character = m_input[m_cursor];
+            shift_cursor();
+
+            if (current_input_character == '&')
+            {
+                m_return_state = State::RCDATA;
+                m_state = State::CHARACTER_REFERENCE;
+                continue;
+            }
+
+            if (current_input_character == '<')
+            {
+                m_state = State::RCDATA_LESS_THAN_SIGN;
+                continue;
+            }
+
+            if (current_input_character == '\0')
+            {
+                m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+                emit_current_token();
+                break;
+            }
+
+            if (!current_input_character)
+            {
+                HTMLParseError(HTMLParseError::ErrorCode::UNEXPECTED_NULL_CHARACTER).emit_error();
+            }
+
+            m_current_token.m_type = HTMLToken::Type::CHARACTER;
+            m_current_token.m_character.data += current_input_character;
+            emit_current_token();
+            continue;
+
+            break;
+
+        case State::RAWTEXT:
+            current_input_character = m_input[m_cursor];
+            shift_cursor();
+
+            if (current_input_character == '<')
+            {
+                m_state = State::RAWTEXT_LESS_THAN_SIGN;
+                continue;
+            }
+
+            if (current_input_character == '\0')
+            {
+                m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+                emit_current_token();
+                break;
+            }
+
+            if (!current_input_character)
+            {
+                HTMLParseError(HTMLParseError::ErrorCode::UNEXPECTED_NULL_CHARACTER).emit_error();
+            }
+
+            m_current_token.m_type = HTMLToken::Type::CHARACTER;
+            m_current_token.m_character.data += current_input_character;
+            emit_current_token();
+            continue;
+
+            break;
+
+        case State::RCDATA_LESS_THAN_SIGN:
+            break;
+
         case State::CHARACTER_REFERENCE:
             break;
 
@@ -409,7 +477,10 @@ bool HTMLTokenizer::tokenize()
             if (next_few_characters_are(2, "--"))
             {
                 shift_cursor(2);
-                //
+                m_current_token.m_type = HTMLToken::Type::COMMENT;
+                m_current_token.m_comment.data = "";
+                m_state = State::COMMENT_START;
+                continue;
             }
 
             if (next_few_characters_are(7, "DOCTYPE"))
@@ -418,6 +489,188 @@ bool HTMLTokenizer::tokenize()
                 m_state = State::DOCTYPE;
                 continue;
             }
+            break;
+
+        case State::COMMENT_START:
+            current_input_character = m_input[m_cursor];
+            shift_cursor();
+
+            if (current_input_character == '-')
+            {
+                m_state = State::COMMENT_START_DASH;
+                continue;
+            }
+
+            if (current_input_character == '>')
+            {
+                HTMLParseError(HTMLParseError::ErrorCode::ABRUPT_CLOSING_OF_EMPTY_COMMENT).emit_error();
+                m_state = State::DATA;
+                continue;
+            }
+
+            shift_cursor(-1);
+            m_state = State::COMMENT;
+            continue;
+
+            break;
+
+        case State::COMMENT:
+            current_input_character = m_input[m_cursor];
+            shift_cursor();
+
+            if (current_input_character == '<')
+            {
+                m_current_token.m_comment.data += current_input_character;
+                m_state = State::COMMENT_LESS_THAN_SIGN;
+                continue;
+            }
+
+            if (current_input_character == '-')
+            {
+                m_state = State::COMMENT_END_DASH;
+                continue;
+            }
+
+            if (current_input_character == '\0')
+            {
+                HTMLParseError(HTMLParseError::ErrorCode::EOF_IN_COMMENT).emit_error();
+                m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+                emit_current_token();
+                break;
+            }
+
+            if (!current_input_character)
+            {
+                HTMLParseError(HTMLParseError::ErrorCode::UNEXPECTED_NULL_CHARACTER).emit_error();
+            }
+
+            m_current_token.m_comment.data += current_input_character;
+            continue;
+
+            break;
+
+        case State::COMMENT_START_DASH:
+            current_input_character = m_input[m_cursor];
+            shift_cursor();
+            if (current_input_character == '-')
+            {
+                m_state = State::COMMENT_END;
+                continue;
+            }
+
+            if (current_input_character == '\0')
+            {
+                HTMLParseError(HTMLParseError::ErrorCode::EOF_IN_COMMENT).emit_error();
+                m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+                emit_current_token();
+                break;
+            }
+
+            m_current_token.m_comment.data += '-';
+            m_state = State::COMMENT;
+            shift_cursor(-1);
+
+            continue;
+
+            break;
+
+        case State::COMMENT_END_DASH:
+            current_input_character = m_input[m_cursor];
+            shift_cursor();
+            if (current_input_character == '-')
+            {
+                m_state = State::COMMENT_END;
+                continue;
+            }
+
+            if (current_input_character == '\0')
+            {
+                HTMLParseError(HTMLParseError::ErrorCode::EOF_IN_COMMENT).emit_error();
+                m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+                emit_current_token();
+                break;
+            }
+
+            m_current_token.m_comment.data += '-';
+            m_state = State::COMMENT;
+            shift_cursor(-1);
+
+            continue;
+
+            break;
+
+        case State::COMMENT_END:
+            current_input_character = m_input[m_cursor];
+            shift_cursor();
+
+            if (current_input_character == '>')
+            {
+                emit_current_token();
+                m_state = State::DATA;
+                continue;
+            }
+
+            if (current_input_character == '!')
+            {
+                m_state = State::COMMENT_END_BANG;
+                continue;
+            }
+
+            if (current_input_character == '-')
+            {
+                m_current_token.m_comment.data += '-';
+                continue;
+            }
+
+            if (current_input_character == '\0')
+            {
+                HTMLParseError(HTMLParseError::ErrorCode::EOF_IN_COMMENT).emit_error();
+                m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+                emit_current_token();
+                break;
+            }
+
+            m_current_token.m_comment.data.append("--");
+            m_state = State::COMMENT;
+            shift_cursor(-1);
+            continue;
+
+            break;
+
+        case State::COMMENT_END_BANG:
+            current_input_character = m_input[m_cursor];
+            shift_cursor();
+
+            if (current_input_character == '-')
+            {
+                m_current_token.m_comment.data.append("--!");
+                m_state = State::COMMENT_END_DASH;
+                continue;
+            }
+
+            if (current_input_character == '>')
+            {
+                HTMLParseError(HTMLParseError::ErrorCode::INCORRECTLY_CLOSED_COMMENT).emit_error();
+                emit_current_token();
+                m_state = State::DATA;
+                continue;
+            }
+
+            if (current_input_character == '\0')
+            {
+                HTMLParseError(HTMLParseError::ErrorCode::EOF_IN_COMMENT).emit_error();
+
+                emit_current_token();
+
+                m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
+                emit_current_token();
+                break;
+            }
+
+            m_current_token.m_comment.data.append("--!");
+            m_state = State::COMMENT;
+            continue;
+
             break;
 
         case State::DOCTYPE:
