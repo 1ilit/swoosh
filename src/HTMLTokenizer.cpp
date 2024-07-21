@@ -11,9 +11,10 @@ HTMLTokenizer::HTMLTokenizer(std::string input)
 
 HTMLTokenizer::~HTMLTokenizer() {}
 
-bool HTMLTokenizer::tokenize()
+std::optional<HTMLToken> HTMLTokenizer::next_token()
 {
     char current_input_character;
+    m_current_token = {};
 
     for (;;)
     {
@@ -50,8 +51,7 @@ bool HTMLTokenizer::tokenize()
             if (current_input_character == '\0')
             {
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             if (!current_input_character)
@@ -61,8 +61,7 @@ bool HTMLTokenizer::tokenize()
 
             m_current_token.m_type = HTMLToken::Type::CHARACTER;
             m_current_token.m_character.data += current_input_character;
-            emit_current_token();
-            continue;
+            return m_current_token;
 
             break;
 
@@ -86,8 +85,7 @@ bool HTMLTokenizer::tokenize()
             if (current_input_character == '\0')
             {
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             if (!current_input_character)
@@ -97,8 +95,7 @@ bool HTMLTokenizer::tokenize()
 
             m_current_token.m_type = HTMLToken::Type::CHARACTER;
             m_current_token.m_character.data += current_input_character;
-            emit_current_token();
-            continue;
+            return m_current_token;
 
             break;
 
@@ -115,8 +112,7 @@ bool HTMLTokenizer::tokenize()
             if (current_input_character == '\0')
             {
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             if (!current_input_character)
@@ -126,8 +122,7 @@ bool HTMLTokenizer::tokenize()
 
             m_current_token.m_type = HTMLToken::Type::CHARACTER;
             m_current_token.m_character.data += current_input_character;
-            emit_current_token();
-            continue;
+            return m_current_token;
 
             break;
 
@@ -186,9 +181,8 @@ bool HTMLTokenizer::tokenize()
 
             if (current_input_character == '>')
             {
-                emit_current_token();
                 m_state = State::DATA;
-                continue;
+                return m_current_token;
             }
 
             if (isupper(current_input_character))
@@ -227,16 +221,14 @@ bool HTMLTokenizer::tokenize()
             if (current_input_character == '>')
             {
                 m_current_token.m_start_tag.self_closing = true;
-                emit_current_token();
                 m_state = State::DATA;
-                continue;
+                return m_current_token;
             }
 
             if (current_input_character == '\0')
             {
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             // error
@@ -330,9 +322,8 @@ bool HTMLTokenizer::tokenize()
 
             if (current_input_character == '>')
             {
-                emit_current_token();
                 m_state = State::DATA;
-                continue;
+                return m_current_token;
             }
 
             shift_cursor(-1);
@@ -361,8 +352,7 @@ bool HTMLTokenizer::tokenize()
             if (current_input_character == '\0')
             {
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             m_current_token.m_start_tag.attributes.back().value += current_input_character;
@@ -389,8 +379,7 @@ bool HTMLTokenizer::tokenize()
             if (current_input_character == '\0')
             {
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             m_current_token.m_start_tag.attributes.back().value += current_input_character;
@@ -415,16 +404,14 @@ bool HTMLTokenizer::tokenize()
 
             if (current_input_character == '>')
             {
-                emit_current_token();
                 m_state = State::DATA;
-                continue;
+                return m_current_token;
             }
 
             if (current_input_character == '\0')
             {
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             if (current_input_character == '=' || current_input_character == '\'' || current_input_character || '"' || current_input_character == '<' || current_input_character == '`')
@@ -454,16 +441,14 @@ bool HTMLTokenizer::tokenize()
 
             if (current_input_character == '>')
             {
-                emit_current_token();
                 m_state = State::DATA;
-                continue;
+                return m_current_token;
             }
 
             if (current_input_character == '\0')
             {
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             // error
@@ -535,8 +520,7 @@ bool HTMLTokenizer::tokenize()
             {
                 HTMLParseError(HTMLParseError::ErrorCode::EOF_IN_COMMENT).emit_error();
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             if (!current_input_character)
@@ -562,8 +546,7 @@ bool HTMLTokenizer::tokenize()
             {
                 HTMLParseError(HTMLParseError::ErrorCode::EOF_IN_COMMENT).emit_error();
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             m_current_token.m_comment.data += '-';
@@ -587,8 +570,7 @@ bool HTMLTokenizer::tokenize()
             {
                 HTMLParseError(HTMLParseError::ErrorCode::EOF_IN_COMMENT).emit_error();
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             m_current_token.m_comment.data += '-';
@@ -605,9 +587,8 @@ bool HTMLTokenizer::tokenize()
 
             if (current_input_character == '>')
             {
-                emit_current_token();
                 m_state = State::DATA;
-                continue;
+                return m_current_token;
             }
 
             if (current_input_character == '!')
@@ -626,8 +607,7 @@ bool HTMLTokenizer::tokenize()
             {
                 HTMLParseError(HTMLParseError::ErrorCode::EOF_IN_COMMENT).emit_error();
                 m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             m_current_token.m_comment.data.append("--");
@@ -651,20 +631,16 @@ bool HTMLTokenizer::tokenize()
             if (current_input_character == '>')
             {
                 HTMLParseError(HTMLParseError::ErrorCode::INCORRECTLY_CLOSED_COMMENT).emit_error();
-                emit_current_token();
                 m_state = State::DATA;
-                continue;
+                return m_current_token;
             }
 
+            // NOTE: This returned both an EOF and COMMENT. MAYBE return eof if for is broken next time??
             if (current_input_character == '\0')
             {
                 HTMLParseError(HTMLParseError::ErrorCode::EOF_IN_COMMENT).emit_error();
 
-                emit_current_token();
-
-                m_current_token.m_type = HTMLToken::Type::END_OF_FILE;
-                emit_current_token();
-                break;
+                return m_current_token;
             }
 
             m_current_token.m_comment.data.append("--!");
@@ -714,9 +690,8 @@ bool HTMLTokenizer::tokenize()
 
             if (current_input_character == '>')
             {
-                emit_current_token();
                 m_state = State::DATA;
-                continue;
+                return m_current_token;
             }
 
             else
@@ -749,7 +724,7 @@ bool HTMLTokenizer::tokenize()
         break;
     }
 
-    return true;
+    return std::nullopt;
 }
 
 void HTMLTokenizer::set_input(std::string input)

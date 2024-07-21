@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include "HTMLTokenizer.h"
+#include "HTMLParser.h"
 #include "HTTPClient.h"
 
 std::string read(const std::string &filePath)
@@ -25,9 +26,11 @@ std::string read(const std::string &filePath)
 int main()
 {
     std::string res = read("./examples/simple.html");
-    HTMLTokenizer tokenizer(res);
+    // HTMLTokenizer tokenizer(res);
+    // tokenizer.tokenize();
 
-    tokenizer.tokenize();
+    HTMLParser parser(res);
+    parser.parse();
 
     // HTTPClient client;
     // client.get("raw.githubusercontent.com", "/drawdb-io/drawdb/main/src/i18n/i18n.js");

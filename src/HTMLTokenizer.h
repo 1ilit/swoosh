@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <optional>
 #include "HTMLToken.h"
 
 class HTMLTokenizer
@@ -90,7 +91,7 @@ public:
         NUMERIC_CHATACTER_REFERENCE_END,
     };
 
-    bool tokenize();
+    std::optional<HTMLToken> next_token();
     void set_input(std::string input);
     void shift_cursor(int offset = 1);
     bool next_few_characters_are(size_t number, std::string chars);
